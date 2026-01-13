@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout.tsx';
 import { User, EventInfo, Material, Role, UserStatus, MaterialType, EventStatus, MaterialStatus, Interaction, InteractionType } from './types';
 import { ApiService } from './services/api';
-import { generateEventTheme, consultSportsExpert } from './services/geminiService';
+//import { generateEventTheme, consultSportsExpert } from './services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 // --- Translation Helpers ---
@@ -405,8 +405,8 @@ const DashboardView = ({ user }: { user: User }) => {
 const EventsView = ({ user }: { user: User }) => {
   const [events, setEvents] = useState<EventInfo[]>([]);
   const [filter, setFilter] = useState<'all' | 'recommended'>('all');
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
+  //const [aiPrompt, setAiPrompt] = useState('');
+  //const [aiResponse, setAiResponse] = useState('');
   
   // Create/Edit Event State
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -440,12 +440,12 @@ const EventsView = ({ user }: { user: User }) => {
     }
   };
 
-  const handleAiConsult = async () => {
+  /*const handleAiConsult = async () => {
     if(!aiPrompt) return;
     setAiResponse("思考中...");
     const res = await consultSportsExpert(aiPrompt);
     setAiResponse(res);
-  };
+  };*/
   
   const handlePublishOrUpdateEvent = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -589,8 +589,8 @@ const EventsView = ({ user }: { user: User }) => {
           </div>
       )}
 
-      {/* AI Assistant for Villagers */}
-      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-100 relative overflow-hidden">
+        {/* AI Assistant for Villagers */}
+        {/* <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-100 relative overflow-hidden">
         <div className="relative z-10">
           <h3 className="font-bold text-indigo-800 mb-2 flex items-center">
             <i className="fas fa-robot mr-2"></i> AI 体育顾问
@@ -611,6 +611,7 @@ const EventsView = ({ user }: { user: User }) => {
           )}
         </div>
       </div>
+        */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map(event => (
@@ -1298,36 +1299,80 @@ const AdminView = ({ user }: { user: User }) => {
 };
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [currentView, setCurrentView] = useState('dashboard');
+    const [user, setUser] = useState<User | null>(null);
+    const [currentView, setCurrentView] = useState('dashboard');
+    const [isLoading, setIsLoading] = useState(true); // 添加一个加载状态
 
-  if (!user) {
-    return <LoginView onLogin={(u) => {
-        setUser(u);
-        setCurrentView('dashboard');
-    }} />;
-  }
-
-  return (
-    <Layout 
-      user={user} 
-      onLogout={() => setUser(null)}
-      currentView={currentView}
-      onNavigate={setCurrentView}
-    >
-      <DbStatus />
-      {(() => {
-        switch (currentView) {
-          case 'dashboard': return <DashboardView user={user} />;
-          case 'events': return <EventsView user={user} />;
-          case 'materials': return <MaterialsView user={user} />;
-          case 'community': return <CommunityView user={user} />;
-          case 'admin': return <AdminView user={user} />;
-          default: return <DashboardView user={user} />;
+    // 这个效应只在应用首次加载时运行一次
+    useEffect(() => {
+        try {
+            // 尝试从 localStorage 读取已保存的用户信息
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                // 如果找到了，就解析它并设置为当前用户
+                setUser(JSON.parse(storedUser));
+            }
+        } catch (error) {
+            console.error("从localStorage读取用户信息失败", error);
+            // 如果出错了，就清空它
+            localStorage.removeItem('user');
+        } finally {
+            // 无论成功与否，都结束加载状态
+            setIsLoading(false);
         }
-      })()}
-    </Layout>
-  );
-};
+    }, []); // 空依赖数组 [] 保证这个 effect 只运行一次
 
+    // 登录处理函数
+    const handleLogin = (loggedInUser: User) => {
+        // 1. 将用户信息保存到 localStorage
+        localStorage.setItem('user', JSON.stringify(loggedInUser));
+        // 2. 更新组件的 state
+        setUser(loggedInUser);
+        setCurrentView('dashboard');
+    };
+
+    // 登出处理函数
+    const handleLogout = () => {
+        // 1. 从 localStorage 中移除用户信息
+        localStorage.removeItem('user');
+        // 2. 清空组件的 state
+        setUser(null);
+    };
+
+    // 在检查本地存储时，显示一个加载指示器，防止闪烁
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <p className="text-gray-500">正在加载...</p>
+            </div>
+        );
+    }
+
+    // 如果没有用户登录，显示登录界面
+    if (!user) {
+        return <LoginView onLogin={handleLogin} />;
+    }
+
+    // 如果用户已登录，显示主布局
+    return (
+        <Layout
+            user={user}
+            onLogout={handleLogout}
+            currentView={currentView}
+            onNavigate={setCurrentView}
+        >
+            <DbStatus />
+            {(() => {
+                switch (currentView) {
+                    case 'dashboard': return <DashboardView user={user} />;
+                    case 'events': return <EventsView user={user} />;
+                    case 'materials': return <MaterialsView user={user} />;
+                    case 'community': return <CommunityView user={user} />;
+                    case 'admin': return <AdminView user={user} />;
+                    default: return <DashboardView user={user} />;
+                }
+            })()}
+        </Layout>
+    );
+};
 export default App;

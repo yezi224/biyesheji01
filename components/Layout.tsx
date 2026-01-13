@@ -40,10 +40,11 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, currentView, 
             <div className="mb-6 p-4 bg-village-light rounded-xl border border-green-100">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full bg-village-green text-white flex items-center justify-center font-bold text-lg">
-                  {user.realName.charAt(0)}
+                  {/* Fallback to username if realName is missing, then to a generic character */}
+                  {(user.realName || user.username || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div className="overflow-hidden">
-                  <p className="text-sm font-bold text-gray-800 truncate">{user.realName}</p>
+                  <p className="text-sm font-bold text-gray-800 truncate">{user.realName || user.username}</p>
                   <p className="text-xs text-gray-500 uppercase">{user.role}</p>
                 </div>
               </div>
