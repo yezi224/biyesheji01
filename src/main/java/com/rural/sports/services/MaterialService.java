@@ -1,9 +1,9 @@
 package com.rural.sports.services;
 
 import com.rural.sports.models.Material;
-import com.rural.sports.daos.MaterialRepository; // Assuming a DAO/Repository exists
+import com.rural.sports.repositories.MaterialRepository; // Assuming a DAO/Repository exists
 import com.rural.sports.models.User;
-import com.rural.sports.daos.UserRepository;
+import com.rural.sports.repositories.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

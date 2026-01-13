@@ -2,8 +2,8 @@ package com.rural.sports.services;
 
 import com.rural.sports.models.Event;
 import com.rural.sports.models.User;
-import com.rural.sports.daos.EventRepository;
-import com.rural.sports.daos.UserRepository;
+import com.rural.sports.repositories.EventRepository;
+import com.rural.sports.repositories.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
