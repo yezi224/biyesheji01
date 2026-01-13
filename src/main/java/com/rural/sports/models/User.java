@@ -21,6 +21,7 @@ public class User implements UserDetails {
     private String username;
     private String password;
     private String role; // VILLAGER, ORGANIZER, ADMIN
+    private String status; // PENDING, APPROVED, REJECTED
     private String village;
     private String sportPreference;
     private String contactInfo;
@@ -49,6 +50,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return "APPROVED".equals(this.status);
     }
 }

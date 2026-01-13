@@ -1,33 +1,17 @@
 
 import { User, EventInfo, Material, Interaction, Role, UserStatus, MaterialStatus, MaterialType, InteractionType } from '../types';
 
-// Use a relative path to leverage the Vite proxy
-const API_BASE_URL = '/api';
-
-// This will hold the Basic Auth token (e.g., "Basic dXNlcjpwYXNzd29yZA==")
-let authToken: string | null = null;
-
-// --- Helper to manage the auth token ---
-const setAuthToken = (token: string | null) => {
-    authToken = token;
-};
-
-const getAuthToken = () => {
-    return authToken;
-};
+// Use an absolute path for the API endpoint
+const API_BASE_URL = 'http://localhost:8080/api';
 
 // A helper function to handle API requests and errors
 const fetchApi = async (url: string, options: RequestInit = {}) => {
+    // The browser will automatically handle session cookies for subsequent requests.
     const headers: Record<string, string> = {
+        // Default to JSON content type, can be overridden by the caller.
         'Content-Type': 'application/json',
         ...(options.headers as Record<string, string>),
     };
-
-    // Add the Authorization header if a token is available
-    const token = getAuthToken();
-    if (token) {
-        headers['Authorization'] = token;
-    }
     
     try {
         const response = await fetch(url, { ...options, headers });
@@ -36,7 +20,8 @@ const fetchApi = async (url: string, options: RequestInit = {}) => {
             let errorMessage = `Error: ${response.status} ${response.statusText}`;
             try {
                 const errorData = await response.json();
-                errorMessage = errorData.message || errorMessage;
+                // Use the error message from the backend's JSON response
+                errorMessage = errorData.message || errorData.error || errorMessage;
             } catch (e) {
                 if (response.status === 401) {
                     errorMessage = '认证失败，请检查用户名或密码。';
@@ -45,6 +30,7 @@ const fetchApi = async (url: string, options: RequestInit = {}) => {
             throw new Error(errorMessage);
         }
         
+        // Handle responses with no content
         if (response.status === 204 || response.headers.get('Content-Length') === '0') {
             return { success: true }; 
         }
@@ -59,28 +45,31 @@ const fetchApi = async (url: string, options: RequestInit = {}) => {
 export const ApiService = {
     // --- Authentication ---
     login: async (username: string, password: string): Promise<User> => {
-        const token = `Basic ${btoa(`${username}:${password}`)}`;
-        
-        // Use /users/me as the validation endpoint
-        const user = await fetchApi(`${API_BASE_URL}/users/me`, {
-            method: 'GET',
-            headers: { 'Authorization': token }
-        });
+        const body = new URLSearchParams();
+        body.append('username', username);
+        body.append('password', password);
 
-        setAuthToken(token);
-        return user;
+        // Spring Security's formLogin expects x-www-form-urlencoded
+        return fetchApi(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body.toString(),
+        });
     },
 
     logout: () => {
-        setAuthToken(null);
-        return Promise.resolve();
+        // Calls the logout endpoint configured in Spring Security
+        return fetchApi(`${API_BASE_URL}/logout`, { method: 'POST' });
     },
 
     checkHealth: async () => {
         try {
-            // Spring Boot health endpoint or a simple open endpoint
+            // A simple check against a known endpoint. Spring Boot Actuator's /health would be ideal here.
             const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'OPTIONS' });
-            return response.ok || response.status === 401 || response.status === 405; 
+            // If we get a response (even an error), the server is likely up.
+            return response.ok || response.status >= 400;
         } catch (e) {
             return false;
         }

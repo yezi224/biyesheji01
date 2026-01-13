@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -54,10 +55,11 @@ public class UserController {
     }
 
     @PutMapping("/{id}/status")
-    public void updateUserStatus(@PathVariable Long id, @RequestBody User statusUpdate) {
+    public void updateUserStatus(@PathVariable Long id, @RequestBody Map<String, String> statusUpdate) {
         User user = userService.getUserById(id);
         if (user != null) {
-            user.setStatus(statusUpdate.getStatus());
+            String newStatus = statusUpdate.get("status");
+            user.setStatus(newStatus);
             userService.updateUser(id, user);
         }
     }
